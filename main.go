@@ -21,9 +21,8 @@ var (
 func main() {
 	flag.Parse()
 	readCommands()
-	fmt.Println(len(commands))
 	for _, v := range commands {
-		cmd := exec.Command("osascript", "-e", fmt.Sprintf("tell application \"Terminal\" to do script \"%s\"", v))
+		cmd := exec.Command("osascript", "-e", "tell application \"System Events\" to tell process \"Terminal\" to keystroke \"t\" using command down", "-e", fmt.Sprintf("tell application \"Terminal\" to do script \"%s\" in front window", v))
 		var out bytes.Buffer
 		var stderr bytes.Buffer
 		cmd.Stdout = &out
