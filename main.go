@@ -17,39 +17,59 @@ import (
 )
 
 var (
-	file = flag.String("f", "", "Filename where set of commands are given")
+	fileName = flag.String("f", "", "Filename where set of commands are given")
 )
 
 var (
-	commands []string
+	commands  []string
+	tempDir   string
+	windowIDs []string
+	tabIDs    []string
+	appTab    = true
 )
 
 const (
 	tabLimit = 10
 )
 
+func createTempDir() {
+	var err error
+	c, err := os.Getwd()
+	if err != nil {
+		log.Fatal("Terminator Error: ", err.Error())
+	}
+	tempDir, err = ioutil.TempDir(c, "_temp")
+	if err != nil {
+		log.Fatal("Terminator Error: ", err.Error())
+	}
+}
+
 func createTempFile() *os.File {
-	tempDir := os.TempDir()
-	// c, _ := os.Getwd()
 	file, err := ioutil.TempFile(tempDir, "temp")
 	if err != nil {
-		panic(err)
+		log.Fatal("Terminator Error: ", err.Error())
 	}
-	fmt.Printf("Temp File created!")
-	// defer os.Remove(file.Name())
 	return file
 }
 
 func main() {
 	flag.Parse()
 	var newWindow bool
-	readCommands()
-	file := createTempFile()
-	for _, v := range commands {
-		var i int
-		var err error
+	createTempDir()
 
-		if newWindow == false {
+	var file *os.File
+	var notFirstWindow bool
+	readCommands()
+	var i int
+	for _, v := range commands {
+
+		var err error
+		file = createTempFile()
+		if i > (tabLimit - 1) {
+			newWindow = true
+		}
+
+		if newWindow == false && notFirstWindow {
 			cmd := exec.Command("osascript", "-e", "tell application \"System Events\" to tell process \"Terminal\" to keystroke \"t\" using command down", "-e", fmt.Sprintf("tell application \"Terminal\" to do script \"%s | tee %s\" in front window", v, file.Name()))
 			var out bytes.Buffer
 			var stderr bytes.Buffer
@@ -57,50 +77,70 @@ func main() {
 			cmd.Stderr = &stderr
 			err = cmd.Run()
 			if err != nil {
-				fmt.Println(fmt.Sprint(err) + ": " + stderr.String())
+				log.Fatal("Terminator Error: ", fmt.Sprint(err)+": "+stderr.String())
 			}
-			_, err = strconv.Atoi(strings.Split(out.String(), " ")[1])
+			if appTab == true {
+				tabIDs = append(tabIDs, strings.Split(out.String(), " ")[1])
+			}
+			i, err = strconv.Atoi(strings.Split(out.String(), " ")[1])
 			if err != nil {
-				fmt.Println(err.Error())
+				log.Fatal("Terminator Error: ", err.Error())
 			}
 		} else {
-			cmd := exec.Command("osascript", "-e", fmt.Sprintf("tell application \"Terminal\" to do script \"%s\"", v))
+			cmd := exec.Command("osascript", "-e", fmt.Sprintf("tell application \"Terminal\" to do script \"%s| tee %s\"", v, file.Name()))
 			var out bytes.Buffer
 			var stderr bytes.Buffer
 			cmd.Stdout = &out
 			cmd.Stderr = &stderr
 			err = cmd.Run()
 			if err != nil {
-				fmt.Println(fmt.Sprint(err) + ": " + stderr.String())
-				return
+				log.Fatal("Terminator Error: ", fmt.Sprint(err)+": "+stderr.String())
 			}
+			windowID := strings.TrimSpace(strings.Split(out.String(), " ")[5])
+			i, err = strconv.Atoi(strings.Split(out.String(), " ")[1])
+			if err != nil {
+				log.Fatal("Terminator Error: ", err.Error())
+			}
+			windowIDs = append(windowIDs, windowID)
 			newWindow = false
-
+			notFirstWindow = true
 		}
 
-		if i > tabLimit {
-			newWindow = true
-		}
 	}
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-sigs
-		os.Remove(file.Name())
+		cleanUp()
 		os.Exit(0)
 	}()
 	http.ListenAndServe(":8080", nil)
 
 }
 
+func cleanUp() {
+	for _, v := range windowIDs {
+		cmd := exec.Command("osascript", "-e", "tell application \"Terminal\"", "-e", fmt.Sprintf("close (every window whose id is %s)", v), "-e", "end tell")
+		var out bytes.Buffer
+		var stderr bytes.Buffer
+		cmd.Stdout = &out
+		cmd.Stderr = &stderr
+		err := cmd.Run()
+		if err != nil {
+			log.Fatal("Terminator Error: ", fmt.Sprint(err)+": "+stderr.String())
+		}
+	}
+
+	os.RemoveAll(tempDir)
+}
+
 func readCommands() {
-	content, err := os.Open(*file)
+	content, err := os.Open(*fileName)
 	if err != nil {
-		log.Fatal("Error")
+		log.Fatal("Terminator Error: ", err.Error())
 	}
 	scanner := bufio.NewScanner(content)
 	for scanner.Scan() {
 		commands = append(commands, scanner.Text())
-		// fmt.Println(scanner.Text()) // Println will add back the final '\n'
 	}
 }
