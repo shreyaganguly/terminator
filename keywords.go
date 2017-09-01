@@ -31,8 +31,23 @@ func getWords() [][]string {
 	return wordsList
 }
 
+func filterText(line string) {
+	var found = 1
+	for _, orWords := range filteringWords {
+		for _, andWord := range orWords {
+			if !strings.Contains(line, andWord) {
+				found = 0
+			}
+		}
+		if found == 1 {
+			fmt.Println("ALERT ALERT ALERT    ", line)
+		}
+	}
+
+}
+
 func searchForKeyWords(filename string) {
-	var lastLine string
+	var lastLine int
 	if file, err := os.Open(filename); err == nil {
 
 		defer file.Close()
@@ -40,16 +55,14 @@ func searchForKeyWords(filename string) {
 		scanner := bufio.NewScanner(file)
 		found := 0
 		for scanner.Scan() {
-			lastLine = scanner.Text()
+			lastLine++
 			if found == 0 {
-				if fileMap[filename] == scanner.Text() {
+				if fileMap[filename] < lastLine {
 					found = 1
 				}
 			}
 			if found == 1 {
-				if strings.Contains(scanner.Text(), "card") {
-					fmt.Println("ALERT ALERT ALERT", scanner.Text())
-				}
+				filterText(scanner.Text())
 			}
 		}
 		fileMap[filename] = lastLine

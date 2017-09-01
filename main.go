@@ -25,7 +25,7 @@ var (
 	commands  []string
 	tempDir   string
 	windowIDs []string
-	fileMap   map[string]string
+	fileMap   map[string]int
 )
 
 const (
@@ -56,7 +56,7 @@ func main() {
 	flag.Parse()
 	var newWindow bool
 	filteringWords = getWords()
-	fileMap = make(map[string]string)
+	fileMap = make(map[string]int)
 	createTempDir()
 
 	var file *os.File
