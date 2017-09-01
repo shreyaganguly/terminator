@@ -18,6 +18,7 @@ import (
 
 var (
 	fileName = flag.String("f", "", "Filename where set of commands are given")
+	keyWords = flag.String("words", "", "Keywords to search for in the logs being monitored(separated with \",\")")
 )
 
 var (
@@ -54,6 +55,7 @@ func createTempFile() *os.File {
 func main() {
 	flag.Parse()
 	var newWindow bool
+	filteringWords = getWords()
 	fileMap = make(map[string]string)
 	createTempDir()
 
