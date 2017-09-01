@@ -24,8 +24,7 @@ var (
 	commands  []string
 	tempDir   string
 	windowIDs []string
-	tabIDs    []string
-	appTab    = true
+	fileMap   map[string]string
 )
 
 const (
@@ -55,6 +54,7 @@ func createTempFile() *os.File {
 func main() {
 	flag.Parse()
 	var newWindow bool
+	fileMap = make(map[string]string)
 	createTempDir()
 
 	var file *os.File
@@ -78,9 +78,6 @@ func main() {
 			err = cmd.Run()
 			if err != nil {
 				log.Fatal("Terminator Error: ", fmt.Sprint(err)+": "+stderr.String())
-			}
-			if appTab == true {
-				tabIDs = append(tabIDs, strings.Split(out.String(), " ")[1])
 			}
 			i, err = strconv.Atoi(strings.Split(out.String(), " ")[1])
 			if err != nil {
