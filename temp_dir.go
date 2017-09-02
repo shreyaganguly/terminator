@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -33,15 +32,7 @@ func createTempFile() *os.File {
 
 func cleanUp() {
 	for _, v := range windowIDs {
-		cmd := exec.Command("osascript", "-e", "tell application \"Terminal\"", "-e", fmt.Sprintf("close (every window whose id is %s)", v), "-e", "end tell")
-		var out bytes.Buffer
-		var stderr bytes.Buffer
-		cmd.Stdout = &out
-		cmd.Stderr = &stderr
-		err := cmd.Run()
-		if err != nil {
-			log.Fatal("Terminator Error: ", fmt.Sprint(err)+": "+stderr.String())
-		}
+		commandExec(exec.Command("osascript", "-e", "tell application \"Terminal\"", "-e", fmt.Sprintf("close (every window whose id is %s)", v), "-e", "end tell"))
 	}
 
 	os.RemoveAll(tempDir)

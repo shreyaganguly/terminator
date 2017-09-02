@@ -16,6 +16,8 @@ import (
 var (
 	fileName = flag.String("f", "", "Filename where set of commands are given")
 	keyWords = flag.String("words", "", "Keywords to search for in the logs being monitored(separated with \",\")")
+	host     = flag.String("b", "0.0.0.0", "Host to start the Terminator application")
+	port     = flag.String("p", "8080", "Port to start the Terminator application")
 )
 
 var (
@@ -30,9 +32,12 @@ const (
 
 func main() {
 	flag.Parse()
-	filteringWords = getWords()
-	readCommands()
+	filteringWords := getFilterKeyWords()
+	commands := readCommands()
 	createTempDir()
+	if *keyWords != "" {
+		go watchLogDir(filteringWords)
+	}
 	for _, v := range commands {
 		var err error
 		file := createTempFile()
@@ -56,15 +61,19 @@ func main() {
 			newWindow = false
 			notFirstWindow = true
 		}
-
 	}
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 	go func() {
 		<-sigs
 		cleanUp()
 		os.Exit(0)
 	}()
-	http.ListenAndServe(":8080", nil)
+	addr := fmt.Sprintf("%s:%s", *host, *port)
+	fmt.Println("Starting the Terminator Application at", addr)
+	err := http.ListenAndServe(addr, nil)
+	if err != nil {
+		log.Fatal("Terminator Error: ", err.Error())
+	}
 
 }
