@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -24,7 +23,7 @@ func getFilterKeyWords() [][]string {
 	return wordsList
 }
 
-func searchForKeyWords(wordsList [][]string, filename string) {
+func searchForKeyWords(logFile *os.File, wordsList [][]string, filename string) {
 	var lastLine int
 	if file, err := os.Open(filename); err == nil {
 
@@ -40,7 +39,7 @@ func searchForKeyWords(wordsList [][]string, filename string) {
 				}
 			}
 			if found == 1 {
-				filterText(wordsList, scanner.Text())
+				filterText(logFile, wordsList, scanner.Text())
 			}
 		}
 		fileMap[filename] = lastLine
@@ -54,7 +53,7 @@ func searchForKeyWords(wordsList [][]string, filename string) {
 	}
 }
 
-func filterText(wordsList [][]string, line string) {
+func filterText(file *os.File, wordsList [][]string, line string) {
 	for _, orWords := range wordsList {
 		var found = 1
 		for _, andWord := range orWords {
@@ -63,7 +62,7 @@ func filterText(wordsList [][]string, line string) {
 			}
 		}
 		if found == 1 {
-			fmt.Println("ALERT ALERT ALERT    ", line)
+			notifyUser(file, line)
 		}
 	}
 

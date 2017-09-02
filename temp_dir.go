@@ -30,10 +30,10 @@ func createTempFile() *os.File {
 	return file
 }
 
-func cleanUp() {
+func cleanUp(file *os.File) {
+	file.Close()
 	for _, v := range windowIDs {
 		commandExec(exec.Command("osascript", "-e", "tell application \"Terminal\"", "-e", fmt.Sprintf("close (every window whose id is %s)", v), "-e", "end tell"))
 	}
-
 	os.RemoveAll(tempDir)
 }

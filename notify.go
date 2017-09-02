@@ -1,15 +1,21 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/go-fsnotify/fsnotify"
 )
 
-func watchLogDir(wordsList [][]string) {
-	fmt.Println("Started watching your logs")
-	// creates a new file watcher
+func watchLogDir(file *os.File, wordsList [][]string) {
+	if file != nil {
+		fmt.Println("Started watching your logs and will write all alerts to ", file.Name())
+	} else {
+		fmt.Println("Started watching your logs and will write all alerts to console")
+	}
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal("Terminator Error: ", err)
@@ -26,7 +32,7 @@ func watchLogDir(wordsList [][]string) {
 			// watch for events
 			case event := <-watcher.Events:
 				if event.Op.String() == "WRITE" {
-					searchForKeyWords(wordsList, event.Name)
+					searchForKeyWords(file, wordsList, event.Name)
 				}
 
 				// watch for errors
@@ -36,11 +42,36 @@ func watchLogDir(wordsList [][]string) {
 		}
 	}()
 
-	// out of the box fsnotify can watch a single file, or a single directory
 	if err := watcher.Add(tempDir); err != nil {
 		log.Fatal("Terminator Error: ", err)
 	}
 
 	<-done
 
+}
+
+func createFilterFile() *os.File {
+	f, err := os.Create(*filterFileName)
+	if err != nil {
+		log.Fatal("Terminator Error: ", err)
+		return nil
+	}
+	return f
+}
+
+func notifyUser(file *os.File, line string) {
+	if len(*filterFileName) == 0 {
+		fmt.Println("ALERT ALERT ALERT    ", line)
+
+	} else {
+		w := bufio.NewWriter(file)
+		_, err := w.WriteString(line + "\n")
+		if err != nil {
+			log.Fatal("Terminator Error: ", err)
+		}
+
+		// Use `Flush` to ensure all buffered operations have
+		// been applied to the underlying writer.
+		w.Flush()
+	}
 }
