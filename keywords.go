@@ -8,7 +8,10 @@ import (
 	"strings"
 )
 
-var filteringWords [][]string
+var (
+	filteringWords [][]string
+	fileMap        map[string]int
+)
 
 func trimSpace(w []string) []string {
 	var trimmedWords []string
@@ -20,6 +23,7 @@ func trimSpace(w []string) []string {
 
 func getWords() [][]string {
 	var wordsList [][]string
+	fileMap = make(map[string]int)
 	words := strings.Split(*keyWords, ",")
 	fmt.Println("Following are your filtering keywords")
 	for _, v := range words {
