@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+
+	"github.com/jaschaephraim/lrserver"
 )
 
 var (
@@ -18,13 +21,14 @@ var (
 	filterFileName = flag.String("filter", "", "Filename where the filtered logs will be stored, if no filename is given it will be stored it will be logged in the console")
 	keyWords       = flag.String("words", "", "Keywords to search for in the logs being monitored(separated with \",\")")
 	host           = flag.String("b", "0.0.0.0", "Host to start the Terminator application")
-	port           = flag.String("p", "8080", "Port to start the Terminator application")
+	port           = flag.Int("p", 8080, "Port to start the Terminator application")
 )
 
 var (
 	windowIDs                 []string
 	newWindow, notFirstWindow bool
 	i                         int
+	lr                        *lrserver.Server
 )
 
 const (
@@ -37,7 +41,7 @@ func main() {
 	commands := readCommands()
 	createTempDir()
 	var file *os.File
-	if *filterFileName != "" {
+	if *filterFileName != "" && *keyWords != "" {
 		file = createFilterFile()
 	}
 	if *keyWords != "" {
@@ -74,7 +78,26 @@ func main() {
 		cleanUp(file)
 		os.Exit(0)
 	}()
-	addr := fmt.Sprintf("%s:%s", *host, *port)
+
+	lr = lrserver.New("Terminator", lrserver.DefaultPort)
+	lr.SetErrorLog(nil)
+	lr.SetStatusLog(nil)
+	go lr.ListenAndServe()
+	http.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
+		data := struct {
+			Keywords string
+			Logs     []string
+		}{
+			*keyWords,
+			logs,
+		}
+		tmpl, err := template.New("new").Parse(html)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		tmpl.Execute(rw, data)
+	})
+	addr := fmt.Sprintf("%s:%d", *host, *port)
 	fmt.Println("Starting the Terminator Application at", addr)
 	err := http.ListenAndServe(addr, nil)
 	if err != nil {

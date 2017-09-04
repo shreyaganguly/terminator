@@ -9,6 +9,8 @@ import (
 	"github.com/go-fsnotify/fsnotify"
 )
 
+var logs []string
+
 func watchLogDir(file *os.File, wordsList [][]string) {
 	if file != nil {
 		fmt.Println("Started watching your logs and will write all alerts to ", file.Name())
@@ -59,7 +61,7 @@ func createFilterFile() *os.File {
 	return f
 }
 
-func notifyUser(file *os.File, line string) {
+func notifyUser(file *os.File, line, filename string) {
 	if len(*filterFileName) == 0 {
 		fmt.Println("ALERT ALERT ALERT    ", line)
 
@@ -69,9 +71,11 @@ func notifyUser(file *os.File, line string) {
 		if err != nil {
 			log.Fatal("Terminator Error: ", err)
 		}
-
 		// Use `Flush` to ensure all buffered operations have
 		// been applied to the underlying writer.
 		w.Flush()
 	}
+	logs = append(logs, line)
+	lr.Reload(filename)
+
 }

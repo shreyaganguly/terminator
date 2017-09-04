@@ -39,7 +39,7 @@ func searchForKeyWords(logFile *os.File, wordsList [][]string, filename string) 
 				}
 			}
 			if found == 1 {
-				filterText(logFile, wordsList, scanner.Text())
+				filterText(logFile, wordsList, scanner.Text(), filename)
 			}
 		}
 		fileMap[filename] = lastLine
@@ -53,7 +53,7 @@ func searchForKeyWords(logFile *os.File, wordsList [][]string, filename string) 
 	}
 }
 
-func filterText(file *os.File, wordsList [][]string, line string) {
+func filterText(file *os.File, wordsList [][]string, line string, filename string) {
 	for _, orWords := range wordsList {
 		var found = 1
 		for _, andWord := range orWords {
@@ -62,7 +62,7 @@ func filterText(file *os.File, wordsList [][]string, line string) {
 			}
 		}
 		if found == 1 {
-			notifyUser(file, line)
+			notifyUser(file, line, filename)
 		}
 	}
 
