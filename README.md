@@ -3,6 +3,12 @@ terminator is a simple commandline application that lets you run multiple servic
 
 ## Run
 
+Write a `commands.txt` file that contain the commands each in a line. For e.g. the contents of `commands.txt` will be something like
+```
+cd vault && vault server -config=config.hcl // run vault
+docker run -it php // run a docker command
+```
+
 ```shell
 $ go get github.com/shreyaganguly/terminator
 $ terminator -f commands.txt -words alertkeyword1 and alertkeyword2,alertkeyword3
